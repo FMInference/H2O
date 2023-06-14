@@ -10,6 +10,8 @@ from tasks.util import sample_batch, shrink_seq
 import multiprocessing
 import ftfy
 
+from transformers import AutoModelForCausalLM, AutoTokenizer, AutoConfig
+
 tokenizer = None
 
 def process_init():
@@ -17,15 +19,15 @@ def process_init():
     model_name = os.environ.get('MODEL_NAME', 'facebook/opt-1.3b')
 
     if model_name == "EleutherAI/gpt-neox-20b":
-        tokenizer = GPTNeoXTokenizerFast.from_pretrained(model_name)
+        tokenizer = AutoTokenizer.from_pretrained(model_name)
         tokenizer.model_max_length = int(1e30)
         tokenizer.pad_token = "<|endoftext|>"
     elif model_name == 'huggyllama/llama-7b':
-        tokenizer = LlamaTokenizer.from_pretrained(model_name)
+        tokenizer = AutoTokenizer.from_pretrained(model_name)
         tokenizer.model_max_length = int(1e30)
         tokenizer.pad_token = "<|endoftext|>"
     else:
-        tokenizer = transformers.AutoTokenizer.from_pretrained(model_name)
+        tokenizer = AutoTokenizer.from_pretrained(model_name)
         tokenizer.add_bos_token = False
 
 def process_request(x, seq):

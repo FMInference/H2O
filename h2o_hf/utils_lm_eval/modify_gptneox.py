@@ -96,14 +96,6 @@ class GPTNeoXAttention_Mask(nn.Module):
         self.heavy_budget_ratio = config.heavy_ratio
         self.recent_budget_ratio = config.recent_ratio
 
-
-    def _reset_masks(self):
-        self.attention_masks_next = None 
-        self.heavy_budget = None
-        self.recent_budget = None
-        self.cache_budget = None
-        self.previous_scores = None
-
     def forward(
         self,
         hidden_states: torch.FloatTensor,
@@ -234,7 +226,10 @@ class GPTNeoXAttention_Mask(nn.Module):
         recent_budget = int(self.recent_budget_ratio * attn_scores.shape[-1])
 
         # Heavy Hitter Mask
-        mask_bottom = local_heavy_hitter_mask(attn_scores, heavy_budget, None)
+        if heavy_budget > 0:
+            mask_bottom = local_heavy_hitter_mask(attn_scores, heavy_budget, None) # Default: No padding applied to input
+        else:
+            mask_bottom = torch.zeros_like(attn_scores, dtype=torch.bool)
 
         ones = torch.ones_like(attn_scores, dtype=torch.bool)
         ones = torch.triu(ones, diagonal=-recent_budget)
@@ -243,7 +238,7 @@ class GPTNeoXAttention_Mask(nn.Module):
         mask_bottom = torch.tril(mask_bottom, diagonal=0)
 
         # mask_bottom = ones
-        attn_scores[~mask_bottom] = torch.min(attention_mask)
+        attn_scores[~mask_bottom] = torch.finfo(attn_scores.dtype).min
         attn_weights = nn.functional.softmax(attn_scores, dim=-1)
 
         attn_weights = attn_weights.to(value.dtype)

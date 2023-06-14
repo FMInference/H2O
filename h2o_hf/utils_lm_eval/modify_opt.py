@@ -109,13 +109,6 @@ class OPTAttention_Mask(nn.Module):
         self.heavy_budget_ratio = heavy_ratio
         self.recent_budget_ratio = recent_ratio
 
-    def _reset_masks(self):
-        self.attention_masks_next = None 
-        self.heavy_budget = None
-        self.recent_budget = None
-        self.cache_budget = None
-        self.previous_scores = None
-
     def _shape(self, tensor: torch.Tensor, seq_len: int, bsz: int):
         return tensor.view(bsz, seq_len, self.num_heads, self.head_dim).transpose(1, 2).contiguous()
 
@@ -196,7 +189,10 @@ class OPTAttention_Mask(nn.Module):
         recent_budget = int(self.recent_budget_ratio * attn_weights.shape[-1])
 
         # Heavy Hitter Mask
-        mask_bottom = local_heavy_hitter_mask(attn_weights, heavy_budget, None) # Default: No padding applied to input
+        if heavy_budget > 0:
+            mask_bottom = local_heavy_hitter_mask(attn_weights, heavy_budget, None) # Default: No padding applied to input
+        else:
+            mask_bottom = torch.zeros_like(attn_weights, dtype=torch.bool)
 
         # Recent Mask
         ones = torch.ones_like(attn_weights, dtype=torch.bool)

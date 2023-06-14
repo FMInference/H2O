@@ -101,7 +101,7 @@ def main():
 
     parser.add_argument("--model_arch", type=str, default='llama')
     parser.add_argument("--model_name", type=str, default='huggyllama/llama-13b')
-    parser.add_argument("--cache_dir", type=str, default=None)
+    parser.add_argument("--cache_dir", type=str, default='../../checkpoint/')
 
     parser.add_argument("--heavy_ratio", type=float, default=0.1)
     parser.add_argument("--recent_ratio", type=float, default=0.1)
@@ -124,8 +124,8 @@ def main():
     set_seed(args)
 
     # Change to your custom prompt text
-    # prompt_text = 'As I walked along the winding path, the rustling of leaves filled the air, creating a soothing melody that accompanied my every step. Sunlight danced through the canopy above, casting playful shadows on the forest floor. The scent of pine mingled with the earthy aroma of damp moss, creating an intoxicating blend that awakened my senses. I paused for a moment, closing my eyes, and allowed the serenity of nature to envelop me. In this tranquil oasis, time seemed to stand still, and all worries and troubles melted away, replaced by a profound sense of peace and harmony.'
-    prompt_text = 'As I sit here on my porch, sipping my coffee and watching the world go by, I can not help but feel a sense of wonder at the sheer complexity of everything around us. From the smallest particle to the grandest galaxy, the universe is a tapestry of infinite detail and beauty. And yet, for all its complexity, there is a simplicity to it all that is truly awe-inspiring. Everything is connected, in ways that we can not even begin to fathom. Every action has a reaction, every cause has an effect. And yet, even with all the knowledge that we have amassed, there is still so much that we do not understand. There are mysteries that have eluded us for centuries, and may continue to do so for centuries to come. But that does not stop us from trying to unravel them. It does not stop us from exploring the depths of our own consciousness, or the vast expanse of the cosmos. It does not stop us from seeking answers to the biggest questions of all. Who are we? Why are we here? What is the meaning of life? These are questions that have plagued us since the dawn of time, and yet we continue to search for answers. Perhaps it is in the search itself that we find meaning. Perhaps it is in the journey, rather than the destination, that we discover the true nature of our existence. And so, as I sit here on my porch, watching the world go by, I am content to simply marvel at the beauty and complexity of it all, and to embrace the mystery that lies at the heart of our being.'
+    prompt_text = 'As I walked along the winding path, the rustling of leaves filled the air, creating a soothing melody that accompanied my every step. Sunlight danced through the canopy above, casting playful shadows on the forest floor. The scent of pine mingled with the earthy aroma of damp moss, creating an intoxicating blend that awakened my senses. I paused for a moment, closing my eyes, and allowed the serenity of nature to envelop me. In this tranquil oasis, time seemed to stand still, and all worries and troubles melted away, replaced by a profound sense of peace and harmony.'
+    # prompt_text = 'As I sit here on my porch, sipping my coffee and watching the world go by, I can not help but feel a sense of wonder at the sheer complexity of everything around us. From the smallest particle to the grandest galaxy, the universe is a tapestry of infinite detail and beauty. And yet, for all its complexity, there is a simplicity to it all that is truly awe-inspiring. Everything is connected, in ways that we can not even begin to fathom. Every action has a reaction, every cause has an effect. And yet, even with all the knowledge that we have amassed, there is still so much that we do not understand. There are mysteries that have eluded us for centuries, and may continue to do so for centuries to come. But that does not stop us from trying to unravel them. It does not stop us from exploring the depths of our own consciousness, or the vast expanse of the cosmos. It does not stop us from seeking answers to the biggest questions of all. Who are we? Why are we here? What is the meaning of life? These are questions that have plagued us since the dawn of time, and yet we continue to search for answers. Perhaps it is in the search itself that we find meaning. Perhaps it is in the journey, rather than the destination, that we discover the true nature of our existence. And so, as I sit here on my porch, watching the world go by, I am content to simply marvel at the beauty and complexity of it all, and to embrace the mystery that lies at the heart of our being.'
 
     model_name = args.model_name
     config = AutoConfig.from_pretrained(model_name, cache_dir=args.cache_dir)
@@ -137,8 +137,8 @@ def main():
     ######## Generate with Full Cache
     model = AutoModelForCausalLM.from_pretrained(model_name, cache_dir=args.cache_dir)
     model.half().eval().cuda()
-    input_ids = tokenizer(prompt_text, return_tensors='pt').input_ids.to(model.device)
-    # input_ids = tokenizer(prompt_text, add_special_tokens=False, return_tensors='pt').input_ids.to(model.device)
+    # input_ids = tokenizer(prompt_text, return_tensors='pt').input_ids.to(model.device)
+    input_ids = tokenizer(prompt_text, add_special_tokens=False, return_tensors='pt').input_ids.to(model.device)
 
     generate_ids = model.generate(input_ids, max_new_tokens=args.length)
     result = tokenizer.batch_decode(generate_ids, skip_special_tokens=True, clean_up_tokenization_spaces=False)[0]

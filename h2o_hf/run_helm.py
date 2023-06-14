@@ -94,6 +94,12 @@ ENABLE_Heavy_Hitter_FUNCTIONS = {
     "gpt_neox": convert_kvcache_gpt_neox_heavy_recent,
 }
 
+TAGET_MODULE = {
+    "llama": LlamaAttention_heavy_hitter,
+    "opt": OPTAttention_Mask,
+    "gpt_neox": GPTNeoXAttention_Mask,
+}
+
 def adjust_length_to_model(length, max_sequence_length):
     if length < 0 and max_sequence_length > 0:
         length = max_sequence_length
@@ -112,7 +118,7 @@ def main():
 
     parser.add_argument("--model_name", type=str, default="")
     parser.add_argument('--model_arch', type=str, default='opt')
-    parser.add_argument("--cache_dir", type=str, default="")
+    parser.add_argument("--cache_dir", type=str, default="../../checkpoint/")
 
     parser.add_argument("--heavy_ratio", type=float, default=0.1)
     parser.add_argument("--recent_ratio", type=float, default=0.1)
@@ -149,7 +155,7 @@ def main():
         config.heavy_ratio = args.heavy_ratio
         config.recent_ratio = args.recent_ratio
         checkpoint = copy.deepcopy(model.state_dict())
-        model = ENABLE_Heavy_Hitter_FUNCTIONS[args.model_type](model, config)
+        model = ENABLE_Heavy_Hitter_FUNCTIONS[args.model_arch](model, config)
         model.load_state_dict(checkpoint)
 
     model.half().eval().cuda()
@@ -189,7 +195,7 @@ def main():
             )
 
             for name, m in model.named_modules():
-                if isinstance(m, LlamaAttention_heavy_hitter):
+                if isinstance(m, TAGET_MODULE[args.model_arch]):
                     m._reset_masks()
 
             tokens = tokenizer.convert_ids_to_tokens(output_sequences['sequences'].squeeze(0))[len(input_ids[0]):]

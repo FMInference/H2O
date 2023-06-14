@@ -1,7 +1,7 @@
 import argparse
 import json, tqdm
 import torch
-
+import copy
 
 
 from transformers import AutoModelForCausalLM, AutoTokenizer, AutoConfig
@@ -29,7 +29,7 @@ if __name__ == '__main__':
     parser.add_argument('--enable_small_cache', action='store_true')
     parser.add_argument('--model-name', type=str, default='facebook/opt-350m')
     parser.add_argument('--model-type', type=str, default='opt')
-    parser.add_argument("--cache-dir", type=str, default=None)
+    parser.add_argument("--cache-dir", type=str, default='../../checkpoint/')
 
     parser.add_argument("--heavy_ratio", type=float, default=0.1)
     parser.add_argument("--recent_ratio", type=float, default=0.1)
@@ -40,8 +40,8 @@ if __name__ == '__main__':
     model_name = args.model_name
 
     config = AutoConfig.from_pretrained(model_name, cache_dir=args.cache_dir)
-    tokenizer = AutoTokenizer.from_pretrained(args.model_name, cache_dir=args.cache_dir)
-    model = AutoModelForCausalLM.from_pretrained(args.model_name, cache_dir=args.cache_dir)
+    tokenizer = AutoTokenizer.from_pretrained(model_name, cache_dir=args.cache_dir)
+    model = AutoModelForCausalLM.from_pretrained(model_name, cache_dir=args.cache_dir)
 
     if args.enable_small_cache:
         print('Enable Small Cache Size')

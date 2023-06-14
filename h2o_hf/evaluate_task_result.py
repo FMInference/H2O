@@ -28,7 +28,7 @@ if __name__ == '__main__':
         os.environ['MODEL_NAME'] = "facebook/opt-66b"
     elif args.model_type == 'bloom':
         os.environ['MODEL_NAME'] = "bigscience/bloom"
-    elif args.model_type == 'gptneox':
+    elif args.model_type == 'gpt_neox':
         os.environ['MODEL_NAME'] = "EleutherAI/gpt-neox-20b"
     elif args.model_type == 'llama':
         os.environ['MODEL_NAME'] = "huggyllama/llama-7b"

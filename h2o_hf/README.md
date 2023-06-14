@@ -9,9 +9,19 @@
 ```
 pip install git+https://github.com/huggingface/transformers
 pip install lm-eval
-cd helm
-pip install -e .
+pip install crfm-helm
 ```
+
+Replace [install_direction]/helm/benchmark/metrics/toxicity_metrics.py with helm/src/helm/benchmark/metrics/toxicity_metrics.py
+
+[install_direction] can be found by
+
+```
+import helm
+print(helm.__file__)
+```
+
+
 
 ## Usage and Examples
 
@@ -31,7 +41,7 @@ You can change the prompt by modifying **prompt_text** in **run_test_generation.
 
 ### Evaluation on tasks from [lm-eval-harness](https://github.com/EleutherAI/lm-evaluation-harness) framework
 
-Here we provide an example to evaluate the 5-shot performance of LLaMA-7b on OpenbookQA, more examples can be found at **scripts/lm_eval**
+Here we provide an example to evaluate the 5-shot performance of LLaMA-7b on OpenbookQA, more examples can be found at **scripts/lm_eval/experiments.sh**
 
 ```
 # Step 1: Prepare inference text
@@ -85,7 +95,7 @@ python -u evaluate_task_result.py \
 
 ### Evaluation on tasks from [HELM](https://crfm.stanford.edu/helm/latest/) framework
 
-To evaluate the performance of tasks from HELM framework, the pipeline is similar with lm-eval-harness. An example is provided in the following, and more experiments can be found at **scripts/helm**
+To evaluate the performance of tasks from HELM framework, the pipeline is similar with lm-eval-harness. An example is provided in the following, and more experiments can be found at **scripts/helm/experiments.sh**
 
 ```
 # Step 1: prepare inference text
@@ -125,7 +135,7 @@ python -u run_helm.py \
   --heavy_ratio 0.1 \
   --recent_ratio 0.1
   
-# Step 3: Evaluate the performance of generated text
+# Step 3: Evaluate the performance of generated text (refer helm/command/eval.sh)
 cd helm
 TASK=xsum
 JSONL=generate_xsum_llama7b.jsonl
@@ -134,6 +144,6 @@ ARCH=llama
 python scripts/offline_eval/import_results.py together ${JSONL} --cache-dir prod_env/cache
 helm-run --conf src/helm/benchmark/presentation/${TASK}/run_specs_${ARCH}.conf --local --max-eval-instances 100 --num-train-trials=1 --suite ${OUTPUT} -n 1
 helm-summarize --suite ${OUTPUT} 
-# The results are writed into a tex file that can be found in benchmark_output/runs/xsum_llama7b_result/groups/latex/ 
+# The results are writted into a tex file that can be found in benchmark_output/runs/xsum_llama7b_result/groups/latex/ 
 ```
 
