@@ -1,0 +1,64 @@
+name: Test
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+
+jobs:
+  install:
+    name: Install
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [3.8]
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+      - uses: actions/cache@v2
+        with:
+          path: ~/.cache/pip
+          key: pip-${{ hashFiles('requirements.txt') }}-${{ matrix.python-version }}
+          restore-keys: |
+            pip-
+      - run: echo "Finished installation."
+
+  test:
+    name: Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Clear free space
+        run: |
+            sudo rm -rf /opt/ghc
+            df -h
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v4
+        with:
+          python-version: 3.8
+      - uses: actions/cache@v2
+        with:
+          path: ~/.cache/pip
+          key: pip-${{ hashFiles('requirements.txt') }}
+          restore-keys: |
+            pip-
+      # Installs dependencies and performs static code checks
+      - run: ./pre-commit-venv.sh
+      - name: Run tests
+        # Skip ICE tokenizer tests. GHA is having trouble downloading ice_text.model.
+        run: source venv/bin/activate && pytest --ignore src/helm/benchmark/window_services/test_ice_window_service.py --ignore src/helm/proxy/clients/test_ice_tokenizer_client.py
+        env:
+          TEST: ${{ matrix.test }}
+          VERSION: ${{ github.head_ref || 'main' }}
+      - name: Run entire pipeline quickly without any data
+        # Checking RunSpecs with openai/davinci should be comprehensive enough
+        run: source venv/bin/activate && helm-run --suite test -m 100 --skip-instances --models-to-run openai/davinci --exit-on-error
+
+  ci:
+    name: All CI tasks complete
+    runs-on: ubuntu-latest
+    needs: [install, test]
+    steps:
+      - uses: actions/checkout@v2
+      - run: echo Done

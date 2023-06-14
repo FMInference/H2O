@@ -1,0 +1,39 @@
+# General Python stuff
+venv
+__pycache__
+*.egg-info
+.mypy_cache
+pip-wheel-metadata/
+
+build
+prod_env
+benchmark_output
+www
+proxy_api_key*.txt
+microsoft_client.lock
+*.log
+*.out
+*.jsonl
+nltk_data/
+
+# Where data lives (e.g., newsqa)
+restricted
+
+# Percy's stuff
+rc
+nav
+tags
+notes.otl
+
+# For Macs
+.DS_Store
+
+# For PyCharm and IntelliJ
+.idea
+.vscode
+
+# For vim
+*.swp
+
+# Miscellaneous
+.nfs*
