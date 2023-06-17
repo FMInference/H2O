@@ -230,7 +230,7 @@ class GPTNeoXAttention_Mask(nn.Module):
 
         self.attention_masks_next = attn_mask.unsqueeze(0).unsqueeze(2)
         score_mask = attn_mask[:,:-1]
-        score_mask = score_mask[:, -self.recent_budget:] = 1
+        score_mask[:, -self.recent_budget:] = 1
         self.previous_scores = self.previous_scores * score_mask
 
         # Mask heads if we want to
