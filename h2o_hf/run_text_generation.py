@@ -136,7 +136,10 @@ def main():
 
     ######## Generate with Full Cache
     model = AutoModelForCausalLM.from_pretrained(model_name, cache_dir=args.cache_dir)
-    model.half().eval().cuda()
+    # model.half().eval().cuda()
+
+    model.eval().cuda()
+
     # input_ids = tokenizer(prompt_text, return_tensors='pt').input_ids.to(model.device)
     input_ids = tokenizer(prompt_text, add_special_tokens=False, return_tensors='pt').input_ids.to(model.device)
 
