@@ -156,8 +156,10 @@ class LlamaAttention_heavy_hitter(nn.Module):
                 attn_mask = attn_mask.scatter(-1, keep_topk, 1)
 
         self.attention_masks_next = attn_mask.unsqueeze(0).unsqueeze(2)
-        self.previous_scores = self.previous_scores * attn_mask[:,:-1]
 
+        score_mask = attn_mask[:,:-1]
+        score_mask = score_mask[:, -self.recent_budget:] = 1
+        self.previous_scores = self.previous_scores * score_mask
 
         attn_output = torch.matmul(attn_weights, value_states)
 
