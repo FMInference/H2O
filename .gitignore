@@ -1,2 +1,13 @@
 
 .DS_Store
+
+*.swp
+*__pycache__
+*.egg-info
+
+# built binaries
+benchmark/third_party/pagecache-mangagement/trunk/fadv
+benchmark/third_party/pagecache-mangagement/trunk/*.so
+benchmark/third_party/pagecache-mangagement/trunk/sfr
+benchmark/third_party/pagecache-mangagement/trunk/Makefile
+dist
