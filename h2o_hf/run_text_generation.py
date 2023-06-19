@@ -124,8 +124,25 @@ def main():
     set_seed(args)
 
     # Change to your custom prompt text
-    prompt_text = 'As I walked along the winding path, the rustling of leaves filled the air, creating a soothing melody that accompanied my every step. Sunlight danced through the canopy above, casting playful shadows on the forest floor. The scent of pine mingled with the earthy aroma of damp moss, creating an intoxicating blend that awakened my senses. I paused for a moment, closing my eyes, and allowed the serenity of nature to envelop me. In this tranquil oasis, time seemed to stand still, and all worries and troubles melted away, replaced by a profound sense of peace and harmony.'
+    # prompt_text = 'As I walked along the winding path, the rustling of leaves filled the air, creating a soothing melody that accompanied my every step. Sunlight danced through the canopy above, casting playful shadows on the forest floor. The scent of pine mingled with the earthy aroma of damp moss, creating an intoxicating blend that awakened my senses. I paused for a moment, closing my eyes, and allowed the serenity of nature to envelop me. In this tranquil oasis, time seemed to stand still, and all worries and troubles melted away, replaced by a profound sense of peace and harmony.'
     # prompt_text = 'As I sit here on my porch, sipping my coffee and watching the world go by, I can not help but feel a sense of wonder at the sheer complexity of everything around us. From the smallest particle to the grandest galaxy, the universe is a tapestry of infinite detail and beauty. And yet, for all its complexity, there is a simplicity to it all that is truly awe-inspiring. Everything is connected, in ways that we can not even begin to fathom. Every action has a reaction, every cause has an effect. And yet, even with all the knowledge that we have amassed, there is still so much that we do not understand. There are mysteries that have eluded us for centuries, and may continue to do so for centuries to come. But that does not stop us from trying to unravel them. It does not stop us from exploring the depths of our own consciousness, or the vast expanse of the cosmos. It does not stop us from seeking answers to the biggest questions of all. Who are we? Why are we here? What is the meaning of life? These are questions that have plagued us since the dawn of time, and yet we continue to search for answers. Perhaps it is in the search itself that we find meaning. Perhaps it is in the journey, rather than the destination, that we discover the true nature of our existence. And so, as I sit here on my porch, watching the world go by, I am content to simply marvel at the beauty and complexity of it all, and to embrace the mystery that lies at the heart of our being.'
+
+
+    prompt_text = 'In the year 2087, humanity has achieved remarkable technological advancements and established colonies on multiple planets within the Milky Way galaxy. Interstellar travel has become commonplace, with faster-than-light spacecraft enabling people to explore distant star systems. Earth has undergone significant changes due to sustainable development efforts, such as harnessing renewable energy sources and implementing widespread ecological restoration projects. However, alongside these triumphs, new challenges have emerged, including the rise of artificial intelligence, ethical dilemmas surrounding genetic engineering, and interplanetary political tensions. Against this backdrop, a team of intrepid scientists embarks on a mission to uncover the secrets of an ancient alien civilization, hidden deep within an uncharted exoplanet. As they navigate treacherous terrains and encounter otherworldly phenomena, they must confront their own fears and reconcile humanity\'s thirst for knowledge with the potential consequences of uncovering secrets that were better left buried. The fate of both their mission and the future of humanity hang in the balance.'
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     model_name = args.model_name
     config = AutoConfig.from_pretrained(model_name, cache_dir=args.cache_dir)
