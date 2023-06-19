@@ -25,7 +25,7 @@ implementation of H2O with 20% heavy hitters improves the throughput over three 
 systems DeepSpeed Zero-Inference, Hugging Face Accelerate, and FlexGen by up to 29×, 29×, and 3×
 on OPT-6.7B and OPT-30B. With the same batch size, H2O can reduce the latency by up to 1.9×.
 
-<img src = "Figs/h2o.jpg" align = "center" width="80%" hight="60%">
+<img src = "Figs/h2o.jpg" align = "center" width="100%" hight="100%">
 
 ## Content
 
