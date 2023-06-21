@@ -22,10 +22,6 @@ python flex_opt.py --gpu-batch-size 1 --overlap false --hh-ratio 0.1 --hh-all --
 ```
 
 ## Run Experiments
-
-```
-cd benchmark/h2o
-python h2o_suite.py [test_suite]
-```
+See test suite in h2o_flexgen/benchmark/h2o/h2o_suite.py
 
 \* The implementation is abused a little bit, because of efficiency concern. More specifically, for n heavy hitter and n locals, we actually preserve n-1 heavy hitter and n+1 locals after the first iteration.
