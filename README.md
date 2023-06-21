@@ -8,7 +8,7 @@ Zhenyu Zhang, Ying Sheng, Tianyi Zhou, Tianlong Chen, Lianmin Zheng, Ruisi Cai, 
 
 ## Overview
 
-Large Language Models (LLMs), despite their recent impressive accomplishments, are notably cost prohibitive to deploy, particularly for applications involving long-content generation, such as dialogue
+Large Language Models (LLMs), despite their recent impressive accomplishments, are notably cost-prohibitive to deploy, particularly for applications involving long-content generation, such as dialogue
 systems and story writing. Often, a large amount of transient state information, referred to as the KV
 cache, is stored in GPU memory in addition to model parameters, scaling linearly with the sequence
 length and batch size. In this paper, we introduce a novel approach for implementing the KV cache which
@@ -31,5 +31,5 @@ on OPT-6.7B and OPT-30B. With the same batch size, H2O can reduce the latency by
 
 We provide two code to implement heavy-hitter oracle for efficient generative inference of large language models:
 
-- [h2o_flexgen](h2o_flexgen/README.md): Archieving higher throughput for LLM generation, the code is based on [FlexGen](https://github.com/FMInference/FlexGen). 
-- [h2o_hf](h2o_hf): Testing the performance on different benchmarks, the code is based on [Hugging Face](https://github.com/huggingface/transformers). And we plan to work on the real throughput improvment based on Hugging Face framework.
+- [h2o_flexgen](h2o_flexgen/README.md): Achieving higher throughput for LLM generation, the code is based on [FlexGen](https://github.com/FMInference/FlexGen). 
+- [h2o_hf](h2o_hf): Testing the performance on different benchmarks, the code is based on [Hugging Face](https://github.com/huggingface/transformers). And we plan to work on the real throughput improvement based on Hugging Face framework.
