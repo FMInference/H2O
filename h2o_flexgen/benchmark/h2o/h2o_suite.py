@@ -32,6 +32,11 @@ suite_h2o_20 = [
     Case("--model facebook/opt-6.7b --path _DUMMY_ --percent 100 0 100 0 100 0 --overlap False --gpu-batch-size 4 --prompt-len 512 --gen-len 512 --cut-gen-len 128 --hh-ratio 0.2 --hh-all"),
     Case("--model facebook/opt-6.7b --path _DUMMY_ --percent 100 0 100 0 100 0 --overlap False --gpu-batch-size 4 --prompt-len 512 --gen-len 1024 --cut-gen-len 128 --hh-ratio 0.3 --hh-all"),
 
+    # opt-30b
+    Case("--model facebook/opt-30b --path _DUMMY_ --percent 0 100 0 100 0 100 --gpu-batch-size 52 --num-gpu-batches 14 --cpu --prompt-len 512 --gen-len 32 --debug fewer_batch --hh-ratio 0.1 --hh-all"),
+    Case("--model facebook/opt-30b --path _DUMMY_ --percent 0 100 0 100 0 100 --gpu-batch-size 52 --num-gpu-batches 8 --cpu --prompt-len 512 --gen-len 512 --debug fewer_batch --hh-ratio 0.2 --hh-all"),
+    Case("--model facebook/opt-30b --path _DUMMY_ --percent 0 100 0 100 0 100 --gpu-batch-size 44 --num-gpu-batches 6 --cpu --prompt-len 512 --gen-len 1024 --debug fewer_batch --hh-ratio 0.3 --hh-all"),
+
     # H2O weights compress
     # opt-6.7b
     Case("--model facebook/opt-6.7b --path _DUMMY_ --percent 100 0 100 0 100 0 --overlap False --gpu-batch-size 70 --prompt-len 512 --gen-len 32 --hh-ratio 0.1 --hh-all --compress-weight"),
