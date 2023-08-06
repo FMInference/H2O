@@ -31,16 +31,12 @@ def adjust_length_to_model(length, max_sequence_length):
     return length
 
 
-def get_policy(model_name, hh_ratio):
+def get_policy(model_name, hh_ratio, gbs, num_gb, percent=None):
+    gpu_batch_size = gbs
+    num_gpu_batches = num_gb
     if model_name == "opt-6.7b":
-        gpu_batch_size = 1
-        num_gpu_batches = 1
-        percent = (100, 0, 100, 0, 100, 0)
         cpu_cache_compute = False
     elif model_name == "opt-30b":
-        gpu_batch_size = 7
-        num_gpu_batches = 4
-        percent = (20, 80, 0, 100, 0, 100)
         cpu_cache_compute = True
     else:
         raise Exception("unsupported model")
@@ -133,11 +129,11 @@ def get_batches(requests, policy):
     return batches, last_policy
 
 
-def run_inference(model_name, requests, hh_ratio):
+def run_inference(model_name, requests, hh_ratio, gbs, num_gb, percent):
     assert model_name == "opt-6.7b" or model_name == "opt-30b"
 
     env = ExecutionEnv.create("~/flexgen_offload_dir")
-    policy = get_policy(model_name, hh_ratio)
+    policy = get_policy(model_name, hh_ratio, gbs, num_gb, percent)
 
     batches, last_policy = get_batches(requests, policy)
 
@@ -163,11 +159,14 @@ def run_inference(model_name, requests, hh_ratio):
             max_new_tokens=batch["max_new_tokens"],
             stop=batch["eos_token_id"])
         gen_tokens += len(input_ids) * batch["max_new_tokens"]
-    total_time = time.time() - tic
+        total_time = time.time() - tic
+        throughput = gen_tokens / total_time
+        print(f"Generation throughput: {throughput:.2f} token/s", flush=True)
 
     # last batch
     del model
     model = OptLM(model_name, env, "~/opt_weights", last_policy)
+
     tic = time.time()
     batch = batches[-1]
     input_ids = batch["input_ids"]
@@ -179,9 +178,12 @@ def run_inference(model_name, requests, hh_ratio):
         stop=batch["eos_token_id"])
     gen_tokens += len(input_ids) * batch["max_new_tokens"]
     total_time += time.time() - tic
+    throughput = gen_tokens / total_time
 
     print(f"Generate end. Elapsed: {total_time:.2f} s", flush=True)
-    print(f"Generation throughput: {gen_tokens / total_time:.2f} token/s", flush=True)
+    print(f"Generation throughput: {throughput:.2f} token/s", flush=True)
+
+    return total_time, throughput
 
     # tokenizer = AutoTokenizer.from_pretrained("facebook/opt-30b", padding_side="left")
     # outputs = tokenizer.batch_decode(output_ids, skip_special_tokens=True)[-100:]
@@ -203,7 +205,10 @@ def main():
     parser.add_argument("--model_name", type=str, required=True)
     parser.add_argument("--cache_dir", type=str, default="../../checkpoint/")
 
-    parser.add_argument("--hh-ratio", type=float, default=0.1)
+    parser.add_argument("--hh_ratio", type=float, default=0.1)
+    parser.add_argument("--gbs", type=int, required=True)
+    parser.add_argument("--num_gb", type=int, required=True)
+    parser.add_argument("--percent", nargs="+", type=int, required=True)
 
     parser.add_argument("--sample_num", type=int, default=1000)
 
@@ -229,14 +234,15 @@ def main():
     if args.sample_num < len(requests):
         print('Sample {} Examples'.format(args.sample_num))
     requests = requests[:args.sample_num]
-    requests = sorted(requests, key=lambda x: len(x["request"]["prompt"]))
+    # requests = sorted(requests, key=lambda x: len(x["request"]["prompt"]))
     # print([len(req["request"]["prompt"]) for req in requests])
 
     # run inference
-    run_inference(model_name, requests, args.hh_ratio)
-    # with open(output_path, 'w') as f:
-    #     for result in results:
-    #         f.write(json.dumps(result) + '\n')
+    total_time, throughput = run_inference(model_name, requests, args.hh_ratio,
+                                           args.gbs, args.num_gb, args.percent)
+    with open(output_path, 'w') as f:
+        res = {"total time": total_time, "generation throughput": throughput}
+        json.dump(res, f)
 
 
 if __name__ == "__main__":
