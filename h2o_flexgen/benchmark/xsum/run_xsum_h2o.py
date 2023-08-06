@@ -31,16 +31,16 @@ def adjust_length_to_model(length, max_sequence_length):
     return length
 
 
-def get_policy(model_name):
+def get_policy(model_name, hh_ratio):
     if model_name == "opt-6.7b":
         gpu_batch_size = 1
         num_gpu_batches = 1
         percent = (100, 0, 100, 0, 100, 0)
         cpu_cache_compute = False
     elif model_name == "opt-30b":
-        gpu_batch_size = 1
-        num_gpu_batches = 1
-        percent = (0, 100, 0, 100, 0, 100)
+        gpu_batch_size = 7
+        num_gpu_batches = 4
+        percent = (20, 80, 0, 100, 0, 100)
         cpu_cache_compute = True
     else:
         raise Exception("unsupported model")
@@ -58,7 +58,10 @@ def get_policy(model_name):
                     compress_cache=False,
                     comp_cache_config=CompressionConfig(
                         num_bits=4, group_size=64,
-                        group_dim=2, symmetric=False))
+                        group_dim=2, symmetric=False),
+                    hh_ratio=hh_ratio,
+                    hh_all=True,
+                    )
     return policy
 
 
@@ -69,6 +72,7 @@ def get_batches(requests, policy):
     print("number of batches", num_batch)
     tokenizer = AutoTokenizer.from_pretrained("facebook/opt-30b", padding_side="left")
 
+    prompt_len = 0
     for i in range(num_batch):
         batch = {"max_new_tokens": 0, "input_ids": [], "eos_token_id": None}
 
@@ -92,7 +96,10 @@ def get_batches(requests, policy):
                                  compress_cache=False,
                                  comp_cache_config=CompressionConfig(
                                      num_bits=4, group_size=64,
-                                     group_dim=2, symmetric=False))
+                                     group_dim=2, symmetric=False),
+                                 hh_ratio=policy.hh_ratio,
+                                 hh_all=True,
+                                 )
             new_batch_size = last_policy.gpu_batch_size * last_policy.num_gpu_batches
             for j in range(cpu_batch_size):
                 requests.append(requests[end_idx - 1])
@@ -102,7 +109,6 @@ def get_batches(requests, policy):
             end_idx = (i + 1) * cpu_batch_size
         assert (end_idx - start_idx) % policy.gpu_batch_size == 0
 
-        prompt_len = 0
         for req in requests[start_idx : end_idx]:
             max_tokens = req["request"]["max_tokens"]
             prompt = req["request"]["prompt"]
@@ -116,21 +122,22 @@ def get_batches(requests, policy):
             # assert batch["eos_token_id"] is None or batch["eos_token_id"] == eos_token_id
             # batch["eos_token_id"] = eos_token_id
 
-        # manual padding
+        batches.append(batch)
+
+    # manual padding
+    for batch in batches:
         for j in range(len(batch["input_ids"])):
             cnt = prompt_len - len(batch["input_ids"][j])
             batch["input_ids"][j] = np.pad(batch["input_ids"][j], (cnt, 0), "constant", constant_values=(0))
 
-        batches.append(batch)
-
     return batches, last_policy
 
 
-def run_inference(model_name, requests):
+def run_inference(model_name, requests, hh_ratio):
     assert model_name == "opt-6.7b" or model_name == "opt-30b"
 
     env = ExecutionEnv.create("~/flexgen_offload_dir")
-    policy = get_policy(model_name)
+    policy = get_policy(model_name, hh_ratio)
 
     batches, last_policy = get_batches(requests, policy)
 
@@ -196,12 +203,10 @@ def main():
     parser.add_argument("--model_name", type=str, required=True)
     parser.add_argument("--cache_dir", type=str, default="../../checkpoint/")
 
-    parser.add_argument("--heavy_ratio", type=float, default=0.1)
-    parser.add_argument("--recent_ratio", type=float, default=0.1)
+    parser.add_argument("--hh-ratio", type=float, default=0.1)
 
     parser.add_argument("--sample_num", type=int, default=1000)
 
-    parser.add_argument("--k", type=int, default=0)
     parser.add_argument("--seed", type=int, default=42, help="random seed for initialization")
     args = parser.parse_args()
 
@@ -228,7 +233,7 @@ def main():
     # print([len(req["request"]["prompt"]) for req in requests])
 
     # run inference
-    run_inference(model_name, requests)
+    run_inference(model_name, requests, args.hh_ratio)
     # with open(output_path, 'w') as f:
     #     for result in results:
     #         f.write(json.dumps(result) + '\n')
