@@ -3,9 +3,11 @@ import argparse
 import numpy as np
 import torch
 import json
-import tqdm 
+import time
+from tqdm import tqdm 
 import copy 
 
+from flexgen.flex_opt import Policy, OptLM, ExecutionEnv, CompressionConfig
 from transformers import AutoModelForCausalLM, AutoTokenizer, AutoConfig
 
 
@@ -64,6 +66,8 @@ def get_batches(requests, policy):
     batches = []
     cpu_batch_size = policy.gpu_batch_size * policy.num_gpu_batches
     num_batch = ((len(requests) - 1) // cpu_batch_size) + 1
+    print("number of batches", num_batch)
+    tokenizer = AutoTokenizer.from_pretrained("facebook/opt-30b", padding_side="left")
 
     for i in range(num_batch):
         batch = {"max_new_tokens": 0, "input_ids": [], "eos_token_id": None}
@@ -71,12 +75,29 @@ def get_batches(requests, policy):
         start_idx = i * cpu_batch_size
         if i == num_batch - 1:
             end_idx = len(requests)
-            last_policy = policy.deepcopy()
-            last_policy.num_gpu_batches = (end_idx - start_idx - 1) // last_policy.gpu_batch_size + 1
+            num_gpu_batches = (end_idx - start_idx - 1) // policy.gpu_batch_size + 1
+            last_policy = Policy(policy.gpu_batch_size, num_gpu_batches,
+                                 policy.w_gpu_percent,
+                                 policy.w_cpu_percent,
+                                 policy.cache_gpu_percent,
+                                 policy.cache_cpu_percent,
+                                 policy.act_gpu_percent,
+                                 policy.act_cpu_percent,
+                                 overlap=True, sep_layer=True, pin_weight=True,
+                                 cpu_cache_compute=policy.cpu_cache_compute, attn_sparsity=1.0,
+                                 compress_weight=False,
+                                 comp_weight_config=CompressionConfig(
+                                     num_bits=4, group_size=64,
+                                     group_dim=0, symmetric=False),
+                                 compress_cache=False,
+                                 comp_cache_config=CompressionConfig(
+                                     num_bits=4, group_size=64,
+                                     group_dim=2, symmetric=False))
             new_batch_size = last_policy.gpu_batch_size * last_policy.num_gpu_batches
             for j in range(cpu_batch_size):
                 requests.append(requests[end_idx - 1])
             end_idx = start_idx + new_batch_size
+            print("last batch index range", start_idx, end_idx)
         else:
             end_idx = (i + 1) * cpu_batch_size
         assert (end_idx - start_idx) % policy.gpu_batch_size == 0
@@ -87,7 +108,7 @@ def get_batches(requests, policy):
             prompt = req["request"]["prompt"]
             stop = req["request"]["stop"]
             input_ids = tokenizer([prompt], add_special_tokens=False).input_ids[0]
-            eos_token_id = tokenizer(stop).input_ids.to(model.device)
+            # eos_token_id = tokenizer(stop).input_ids[0]
 
             prompt_len = max(prompt_len, len(input_ids))
             batch["max_new_tokens"] = max(batch["max_new_tokens"], max_tokens)
@@ -96,9 +117,9 @@ def get_batches(requests, policy):
             # batch["eos_token_id"] = eos_token_id
 
         # manual padding
-        for i in len(batch["input_ids"]):
-            cnt = prompt_len - len(batch["input_ids"][i])
-            batch["input_ids"][i] = np.pad(batch["input_ids"][i], (cnt, 0), "constant", constant_values=(0))
+        for j in range(len(batch["input_ids"])):
+            cnt = prompt_len - len(batch["input_ids"][j])
+            batch["input_ids"][j] = np.pad(batch["input_ids"][j], (cnt, 0), "constant", constant_values=(0))
 
         batches.append(batch)
 
@@ -119,25 +140,26 @@ def run_inference(model_name, requests):
     print(f"Init weights end. Elapsed: {time.time() - tic:.2f} s", flush=True)
 
     # Generate
-    print(f"Generate begin. #sequences: {len(batches) * effective_bs}")
+    print(f"Generate begin.")
     tic = time.time()
-    input_ids_batches = []
-    output_ids_batches = []
     gen_tokens = 0
-    for i, batch in tqdm(enumerate(batches)):
+    for i, batch in tqdm(enumerate(batches[:-1]), total=len(batches[:-1])):
         input_ids = batch["input_ids"]
+        print("batch size:", len(input_ids))
+        print("prompt len:", len(input_ids[0]))
+        print("max new tokens:", batch["max_new_tokens"])
+        print("eos id:", batch["eos_token_id"])
         output_ids = model.generate(
             input_ids,
             do_sample=True,
             temperature=1e-7,
             max_new_tokens=batch["max_new_tokens"],
             stop=batch["eos_token_id"])
-        input_ids_batches.append(input_ids)
-        output_ids_batches.append(output_ids)
         gen_tokens += len(input_ids) * batch["max_new_tokens"]
     total_time = time.time() - tic
 
     # last batch
+    del model
     model = OptLM(model_name, env, "~/opt_weights", last_policy)
     tic = time.time()
     batch = batches[-1]
@@ -154,25 +176,24 @@ def run_inference(model_name, requests):
     print(f"Generate end. Elapsed: {total_time:.2f} s", flush=True)
     print(f"Generation throughput: {gen_tokens / total_time:.2f} token/s", flush=True)
 
-    input_ids = np.concatenate(input_ids_batches)
-    output_ids = np.concatenate(output_ids_batches)
-    outputs = tokenizer.batch_decode(output_ids, skip_special_tokens=True)
-    #print("Outputs:\n" + 70 * '-')
-    ##for i in range(len(outputs)):
-    #for i in [0, len(outputs) - 1]:
-    #    print(f"{i}:\n{outputs[i]}")
-    #    print("-" * 70)
+    # tokenizer = AutoTokenizer.from_pretrained("facebook/opt-30b", padding_side="left")
+    # outputs = tokenizer.batch_decode(output_ids, skip_special_tokens=True)[-100:]
+    # print("Sample Outputs:\n" + 70 * '-')
+    # #for i in range(len(outputs)):
+    # for i in [0, len(outputs) - 1]:
+    #     print(f"{i}:\n{outputs[i]}")
+    #     print("-" * 70)
 
-    return outputs
+    # return outputs
 
 
 def main():
     parser = argparse.ArgumentParser()
 
     parser.add_argument("--input_path", type=str, default="../../../h2o_hf/data/xsum_opt.jsonl")
-    parser.add_argument("--output_path", type=str, default="")
+    parser.add_argument("--output_path", type=str, default="output")
 
-    parser.add_argument("--model_name", type=str, default="")
+    parser.add_argument("--model_name", type=str, required=True)
     parser.add_argument("--cache_dir", type=str, default="../../checkpoint/")
 
     parser.add_argument("--heavy_ratio", type=float, default=0.1)
@@ -199,7 +220,7 @@ def main():
         for line in f:
             if line.strip() != '':
                 requests.append(json.loads(line))
-    print(len(requests))
+    print("number of requests", len(requests))
     if args.sample_num < len(requests):
         print('Sample {} Examples'.format(args.sample_num))
     requests = requests[:args.sample_num]
@@ -207,10 +228,10 @@ def main():
     # print([len(req["request"]["prompt"]) for req in requests])
 
     # run inference
-    results = run_inference(model_name, requests)
-    with open(output_path, 'w') as f:
-        for result in results:
-            f.write(json.dumps(result) + '\n')
+    run_inference(model_name, requests)
+    # with open(output_path, 'w') as f:
+    #     for result in results:
+    #         f.write(json.dumps(result) + '\n')
 
 
 if __name__ == "__main__":
