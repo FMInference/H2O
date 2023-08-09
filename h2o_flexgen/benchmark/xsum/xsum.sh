@@ -38,3 +38,10 @@ python run_xsum_flexgen.py --model opt-30b --output flexgen_30b.res
 #                          --percent 0 100 0 100 0 100 \
 #                          --gpu-batch-size 8 --num-gpu-batches 4 --cpu \
 #                          --max-eval-instance 518
+
+# HuggingFace example
+python3 hf_opt.py --model facebook/opt-1.3b --batch-size 16 --prompt-len 512 --gen-len 64
+python3 hf_opt.py --model facebook/opt-30b --batch-size 1 --prompt-len 512 --gen-len 64 --cpu-offload
+# DeepSpeed example
+deepspeed --num_gpus 1 hf_opt.py --model facebook/opt-1.3b --batch-size 16 --prompt-len 512 --gen-len 64
+deepspeed --num_gpus 1 hf_opt.py --model facebook/opt-30b --batch-size 16 --prompt-len 512 --gen-len 64 --cpu-offload
