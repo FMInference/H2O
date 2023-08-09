@@ -343,28 +343,63 @@ class TorchDevice:
         k = k.view(b, s, n_head, head_dim)
         v = v.view(b, s, n_head, head_dim)
 
-        # shape: (b * n_head, s, head_dim)
-        q = q.permute(0, 2, 1, 3).reshape(b * n_head, s, head_dim)
-        # shape: (b * n_head, head_dim, s)
-        k = k.permute(0, 2, 3, 1).reshape(b * n_head, head_dim, s)
-        # shape: (b * n_head, s, head_dim)
-        v = v.permute(0, 2, 1, 3).reshape(b * n_head, s, head_dim)
+#        # shape: (b * n_head, s, head_dim)
+#        q = q.permute(0, 2, 1, 3).reshape(b * n_head, s, head_dim)
+#        # shape: (b * n_head, head_dim, s)
+#        k = k.permute(0, 2, 3, 1).reshape(b * n_head, head_dim, s)
+#        # shape: (b * n_head, s, head_dim)
+#        v = v.permute(0, 2, 1, 3).reshape(b * n_head, s, head_dim)
+#
+#         # shape: (b * n_head, s, s)
+#         attn_weights = torch.bmm(q, k)
+# 
+#         # shape: (b, 1, s, s)
+#         idx = torch.arange(s, device=self.dev)
+#         causal_mask = (idx <= idx.view(s, 1)).view(1, 1, s, s)
+#         mask = attention_mask.data.view(b, 1, 1, s) & causal_mask
+# 
+#         # shape: (b, n_head, s, s)
+#         attn_weights = attn_weights.view(b, n_head, s, s)
+#         attn_weights = torch.where(mask, attn_weights, -1e4)
+#         attn_weights = attn_weights.view(b * n_head, s, s)
+#         attn_weights = F.softmax(attn_weights, dim=2, dtype=torch.float32).to(torch.float16)
+#         # shape: (b, n_head, s, head_dim)
+#         value = torch.bmm(attn_weights, v).view(b, n_head, s, head_dim)
 
-        # shape: (b * n_head, s, s)
-        attn_weights = torch.bmm(q, k)
+        # shape: (b, n_head, s, head_dim)
+        q = q.permute(0, 2, 1, 3)
+        # shape: (b, n_head, head_dim, s)
+        k = k.permute(0, 2, 3, 1)
+        # shape: (b * n_head, s, head_dim)
+        v = v.permute(0, 2, 1, 3)
+
 
         # shape: (b, 1, s, s)
         idx = torch.arange(s, device=self.dev)
         causal_mask = (idx <= idx.view(s, 1)).view(1, 1, s, s)
         mask = attention_mask.data.view(b, 1, 1, s) & causal_mask
 
-        # shape: (b, n_head, s, s)
-        attn_weights = attn_weights.view(b, n_head, s, s)
-        attn_weights = torch.where(mask, attn_weights, -1e4)
-        attn_weights = attn_weights.view(b * n_head, s, s)
-        attn_weights = F.softmax(attn_weights, dim=2, dtype=torch.float32).to(torch.float16)
-        # shape: (b, n_head, s, head_dim)
-        value = torch.bmm(attn_weights, v).view(b, n_head, s, head_dim)
+        tile_size = 4
+        attns = []
+        values = []
+        for i in range(0, n_head // tile_size):
+            q_tile = q[:, i * tile_size: (i+1) * tile_size, :, :].reshape(-1, s, head_dim)
+            k_tile = k[:, i * tile_size: (i+1) * tile_size, :, :].reshape(-1, head_dim, s)
+            v_tile = v[:, i * tile_size: (i+1) * tile_size, :, :].reshape(-1, s, head_dim)
+            attn = torch.bmm(q_tile, k_tile)
+
+            # shape: (b, n_head, s, s)
+            attn = attn.view(b, tile_size, s, s)
+            attn = torch.where(mask, attn, -1e4)
+            attn = attn.view(b * tile_size, s, s)
+            attn = F.softmax(attn, dim=2, dtype=torch.float32).to(torch.float16)
+            # shape: (b, n_head, s, head_dim)
+            value_tile = torch.bmm(attn, v_tile).view(b, tile_size, s, head_dim)
+            attns.append(attn.view(b, tile_size, s, s))
+            values.append(value_tile)
+        attn_weights = torch.cat(attns, dim=1).view(b * n_head, s, s)
+        value = torch.cat(values, dim=1).view(b, n_head, s, head_dim)
+
         # shape: (b, s, h)
         value = value.transpose(1, 2).reshape(b, s, h)
 
@@ -376,6 +411,13 @@ class TorchDevice:
 
         if donate[0]: inputs.delete()
         if donate[1]: attention_mask.delete()
+
+        # shape: (b * n_head, s, head_dim)
+        q = q.reshape(b * n_head, s, head_dim)
+        # shape: (b * n_head, head_dim, s)
+        k = k.reshape(b * n_head, head_dim, s)
+        # shape: (b * n_head, s, head_dim)
+        v = v.reshape(b * n_head, s, head_dim)
 
         # (s, b * n_head, head_dim)
         k = k.permute(2, 0, 1)
