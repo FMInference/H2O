@@ -380,8 +380,10 @@ class TorchDevice:
         mask = attention_mask.data.view(b, 1, 1, s) & causal_mask
 
         tile_size = 4
-        attns = []
         values = []
+        k_hhs = []
+        v_hhs = []
+        accs = []
         for i in range(0, n_head // tile_size):
             q_tile = q[:, i * tile_size: (i+1) * tile_size, :, :].reshape(-1, s, head_dim)
             k_tile = k[:, i * tile_size: (i+1) * tile_size, :, :].reshape(-1, head_dim, s)
@@ -395,10 +397,20 @@ class TorchDevice:
             attn = F.softmax(attn, dim=2, dtype=torch.float32).to(torch.float16)
             # shape: (b, n_head, s, head_dim)
             value_tile = torch.bmm(attn, v_tile).view(b, tile_size, s, head_dim)
-            attns.append(attn.view(b, tile_size, s, s))
             values.append(value_tile)
-        attn_weights = torch.cat(attns, dim=1).view(b * n_head, s, s)
+
+            if hh_k is not None:
+                k_hh, v_hh, acc = self._heavy_hitter_pruning(k_tile.reshape(b * tile_size, head_dim, s).permute(2, 0, 1),
+                                                             v_tile.reshape(b * tile_size, s, head_dim).permute(1, 0, 2),
+                                                             attn, hh_k)
+                k_hhs.append(k_hh.view(hh_k * 2 - 1, b, tile_size, head_dim))
+                v_hhs.append(v_hh.view(hh_k * 2 - 1, b, tile_size, head_dim))
+                accs.append(acc.view(hh_k * 2 - 1, b, tile_size))
+
         value = torch.cat(values, dim=1).view(b, n_head, s, head_dim)
+        k = torch.cat(k_hhs, dim=2).view(hh_k * 2 - 1, b * n_head, head_dim)
+        v = torch.cat(v_hhs, dim=2).view(hh_k * 2 - 1, b * n_head, head_dim)
+        acc = torch.cat(accs, dim=2).view(hh_k * 2 - 1, b * n_head)
 
         # shape: (b, s, h)
         value = value.transpose(1, 2).reshape(b, s, h)
@@ -411,21 +423,6 @@ class TorchDevice:
 
         if donate[0]: inputs.delete()
         if donate[1]: attention_mask.delete()
-
-        # shape: (b * n_head, s, head_dim)
-        q = q.reshape(b * n_head, s, head_dim)
-        # shape: (b * n_head, head_dim, s)
-        k = k.reshape(b * n_head, head_dim, s)
-        # shape: (b * n_head, s, head_dim)
-        v = v.reshape(b * n_head, s, head_dim)
-
-        # (s, b * n_head, head_dim)
-        k = k.permute(2, 0, 1)
-        v = v.permute(1, 0, 2)
-
-        # select the heavy hitters and recent tokens
-        if hh_k is not None:
-            k, v, acc = self._heavy_hitter_pruning(k, v, attn_weights, hh_k)
 
         if compress_cache:
             k = self.compressed_device.compress(k, comp_config)

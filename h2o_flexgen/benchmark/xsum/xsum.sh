@@ -38,3 +38,10 @@ python run_xsum_flexgen.py --model opt-30b --output flexgen_30b.res
 #                          --percent 0 100 0 100 0 100 \
 #                          --gpu-batch-size 8 --num-gpu-batches 4 --cpu \
 #                          --max-eval-instance 518
+
+# H2O with attention tiling 0.1 + 0.1
+python ../../flexgen/flex_opt.py --model facebook/opt-6.7b --percent 100 0 100 0 100 0 --gpu-batch-size 5 --num-gpu-batches 1 --prompt-len 1400 --gen-len 64 --hh-ratio 0.1 --hh-all
+
+# H2O with attention tiling 0.5 + 0.5
+python ../../flexgen/flex_opt.py --model facebook/opt-6.7b --percent 100 0 100 0 100 0 --gpu-batch-size 1 --num-gpu-batches 1 --prompt-len 1400 --gen-len 64 --hh-ratio 0.5 --hh-all
+
