@@ -57,6 +57,22 @@ def greedy_generate(model, tokenizer, input_ids, past_key_values, max_gen_len):
     print(" ".join(generated_text[pos:]), flush=True)
     return past_key_values
 
+@torch.no_grad()
+def streaming_inference(model, tokenizer, prompts, kv_cache=None, max_gen_len=1000):
+    past_key_values = None
+    for idx, prompt in enumerate(prompts):
+        prompt = "USER: " + prompt + "\n\nASSISTANT: "
+        print("\n" + prompt, end="")
+        input_ids = tokenizer(prompt, return_tensors="pt").input_ids
+        input_ids = input_ids.to(model.device)
+        seq_len = input_ids.shape[1]
+        if kv_cache is not None:
+            space_needed = seq_len + max_gen_len
+            past_key_values = kv_cache.evict_for_space(past_key_values, space_needed)
+
+        past_key_values = greedy_generate(
+            model, tokenizer, input_ids, past_key_values, max_gen_len=max_gen_len
+        )
 
 @torch.no_grad()
 def streaming_inference_heavy_hitter(model, tokenizer, prompts, kv_cache=None, max_gen_len=1000):
@@ -109,7 +125,12 @@ def main(args):
 
     else:
         kv_cache = None
-
+        streaming_inference(
+            model,
+            tokenizer,
+            prompts,
+            kv_cache,
+        )
 
 
 if __name__ == "__main__":
