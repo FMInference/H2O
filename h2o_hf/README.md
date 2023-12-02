@@ -30,7 +30,7 @@ shutil.copy(source_path, target_path)
 
 ### Benchmarking on summarization tasks with real KV dropping implementation
 
-This section provides the code with real KV dropping implementation, instead of masking. 
+This section provides the code with real KV dropping implementation, rather than masking. 
 
 ```
 # Full baseline on XSUM
