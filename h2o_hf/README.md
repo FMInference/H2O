@@ -28,9 +28,23 @@ shutil.copy(source_path, target_path)
 
 ## Usage and Examples
 
+### Benchmarking on summarization tasks with real KV dropping implementation
+
+This section provides the code with real KV dropping implementation, instead of masking. 
+
+```
+# Full baseline on XSUM
+bash scripts/summarization/eval.sh xsum ${shots} full ${GPU-ID}
+
+# H2O KV Cache on XSUM
+bash scripts/summarization/eval.sh xsum ${shots} h2o ${GPU-ID} ${HH-size} ${Local-size} 
+```
+
+
+
 ### Text-Generation with custom prompts
 
-To get started, you can generate text with your own prompts, The models will automatically downloaded from Hugging Face.
+In this code, you can generate text with your own prompts, The models will automatically downloaded from Hugging Face.
 
 ```
 python -u run_text_generation.py \
