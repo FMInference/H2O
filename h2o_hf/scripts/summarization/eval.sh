@@ -12,14 +12,14 @@ if [[ ${method} == 'h2o' ]]; then
         --model_name meta-llama/Llama-2-7b-hf \
         --hh_size ${HH_SIZE} \
         --recent_size ${RECENT_SIZE} \
-        --cache_dir ../llm_weights \
+        --cache_dir ../../llm_weights \
         --enable_h2o_cache
 elif [[ ${method} == 'full' ]]; then
     CUDA_VISIBLE_DEVICES=${GPU} python -u run_summarization.py \
         --input_path data/summarization_data/${task}_${shots}shot.jsonl \
         --output_path summary_results/${task}_${shots}shot_full.jsonl \
         --model_name meta-llama/Llama-2-7b-hf \
-        --cache_dir ../llm_weights 
+        --cache_dir ../../llm_weights 
 else
     echo 'unknown argment for method'
 fi
