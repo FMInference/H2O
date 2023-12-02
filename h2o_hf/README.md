@@ -28,6 +28,18 @@ shutil.copy(source_path, target_path)
 
 ## Usage and Examples
 
+### Streaming with H2O
+
+This section provides a simple demo to generate with H2O.
+
+```
+# Full KV Cache
+bash scripts/streaming/eval.sh full
+
+# H2O
+bash scripts/streaming/eval.sh h2o
+```
+
 ### Benchmarking on summarization tasks with real KV dropping implementation
 
 This section provides the code with real KV dropping implementation, rather than masking. 
