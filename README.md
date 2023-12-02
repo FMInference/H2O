@@ -32,4 +32,4 @@ on OPT-6.7B and OPT-30B. With the same batch size, H2O can reduce the latency by
 We provide two code to implement heavy-hitter oracle for efficient generative inference of large language models:
 
 - [h2o_flexgen](h2o_flexgen/README.md): Achieving higher throughput for LLM generation, the code is based on [FlexGen](https://github.com/FMInference/FlexGen). 
-- [h2o_hf](h2o_hf): Testing the performance on different benchmarks, the code is based on [Hugging Face](https://github.com/huggingface/transformers). And we plan to work on the real throughput improvement based on Hugging Face framework.
+- [h2o_hf](h2o_hf): Testing the performance on different benchmarks, the code is based on [Hugging Face](https://github.com/huggingface/transformers). Both simulation code (masking attention matrix) and real KV dropping implementation are provided (please refer to h2o_hf/utils_real_drop).
