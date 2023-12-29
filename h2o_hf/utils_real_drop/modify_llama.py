@@ -13,7 +13,6 @@ from transformers.models.llama.modeling_llama import (
     LlamaAttention,
     rotate_half,
     apply_rotary_pos_emb,
-    repeat_kv,
     LlamaRotaryEmbedding,
     apply_rotary_pos_emb,
     LlamaForCausalLM,
@@ -23,6 +22,16 @@ import types
 __all__ = ["H2OLlamaForCausalLM", "H2OLlamaAttention",
             'H2OLlamaAttention_streaming', 'H2OLlamaForCausalLM_streaming']
 
+def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
+    """
+    This is the equivalent of torch.repeat_interleave(x, dim=1, repeats=n_rep). The hidden states go from (batch,
+    num_key_value_heads, seqlen, head_dim) to (batch, num_attention_heads, seqlen, head_dim)
+    """
+    batch, num_key_value_heads, slen, head_dim = hidden_states.shape
+    if n_rep == 1:
+        return hidden_states
+    hidden_states = hidden_states[:, :, None, :, :].expand(batch, num_key_value_heads, n_rep, slen, head_dim)
+    return hidden_states.reshape(batch, num_key_value_heads * n_rep, slen, head_dim)
 
 def _make_causal_mask(
     bsz: int, tgt_len: int, past_key_values_length: int, dtype: torch.dtype, device: torch.device):
