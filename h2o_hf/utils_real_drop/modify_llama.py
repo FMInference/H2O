@@ -8,7 +8,7 @@ import torch.utils.checkpoint
 
 import torch.nn.functional as F
 
-from transformers.models.llama.configuration_llama import LlamaConfig
+# from transformers.models.llama.configuration_llama import LlamaConfig
 from transformers.models.llama.modeling_llama import (
     LlamaAttention,
     rotate_half,
