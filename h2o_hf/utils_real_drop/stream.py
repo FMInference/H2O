@@ -63,6 +63,7 @@ def load(model_name_or_path, heavy_hitter=False, args=None):
     )
 
     if args is not None:
+        print("Autoconfig...")
         config = AutoConfig.from_pretrained(model_name_or_path)
         config.hh_size = args.heavy_hitter_size
         config.recent_size = args.recent_size

@@ -11,7 +11,8 @@ import re
 import sys
 
 from tqdm import tqdm
-from streaming_llm.utils import load, download_url, load_jsonl
+#from streaming_llm.utils import load, download_url, load_jsonl
+from utils_real_drop.stream import load, download_url, load_jsonl
 
 from transformers.models.llama.modeling_llama import LlamaAttention
 from utils_real_drop.modify_llama import H2OLlamaAttention_streaming, H2OLlamaForCausalLM_streaming
@@ -136,7 +137,7 @@ def main(args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--model_name_or_path", type=str, default="lmsys/vicuna-13b-v1.3"
+        "--model_name_or_path", type=str, default="/home/alex/work/optimum-intel/scripts/llama-2-7b-chat/pytorch/" #"lmsys/vicuna-13b-v1.3"
     )
     parser.add_argument("--data_root", type=str, default="data/")
     parser.add_argument("--enable_streaming_with_H2O", action="store_true")

@@ -15,12 +15,12 @@ from rouge import Rouge
 import logging
 import numpy as np
 
-from lost_in_the_middle.prompting import (
-    Document,
-    get_closedbook_qa_prompt,
-    get_qa_prompt,
-    get_qa_prompt_index
-)
+# from lost_in_the_middle.prompting import (
+#     Document,
+#     get_closedbook_qa_prompt,
+#     get_qa_prompt,
+#     get_qa_prompt_index
+# )
 
 from transformers import AutoModelForCausalLM, AutoTokenizer, AutoConfig
 from transformers.models.llama.configuration_llama import LlamaConfig
@@ -56,7 +56,7 @@ if __name__ == '__main__':
     parser.add_argument("--input_path", type=str, default="")
     parser.add_argument("--output_path", type=str, default="")
 
-    parser.add_argument("--model_name", type=str, default="")
+    parser.add_argument("--model_name", type=str, default="/home/alex/work/optimum-intel/scripts/llama-2-7b-chat/pytorch/")
     parser.add_argument("--cache_dir", type=str, default=None)
 
     parser.add_argument("--hh_size", type=int, default=1024)
@@ -80,12 +80,13 @@ if __name__ == '__main__':
     args.n_gpu = 0 if args.no_cuda else torch.cuda.device_count()
     set_seed(args)
 
-    model_name = args.model_name
+    model_name = "/home/alex/work/optimum-intel/scripts/llama-2-7b-chat/pytorch" #args.model_name
     input_path = args.input_path
     output_path = args.output_path
 
-    config = AutoConfig.from_pretrained(model_name, cache_dir=args.cache_dir)
-    tokenizer = AutoTokenizer.from_pretrained(model_name, use_fast=True, cache_dir=args.cache_dir)
+    #config = AutoConfig.from_pretrained(model_name)#, cache_dir=args.cache_dir)
+    config = AutoConfig.from_pretrained(model_name)
+    tokenizer = AutoTokenizer.from_pretrained(model_name, use_fast=True)#, cache_dir=args.cache_dir)
 
     if args.batch_size>1:
         tokenizer.pad_token = tokenizer.eos_token
