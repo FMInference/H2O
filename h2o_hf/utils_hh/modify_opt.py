@@ -187,7 +187,7 @@ class OPTAttention_Mask(nn.Module):
                 _, keep_topk = selected_set.topk(k=self.heavy_budget, dim=-1, largest=True)
                 attn_mask = attn_mask.scatter(-1, keep_topk, 1)
 
-        self.attention_masks_next = attn_mask.unsqueeze(1)
+        self.attention_masks_next = attn_mask.clone().unsqueeze(1)
 
         score_mask = attn_mask[:,:-1]
         score_mask[:, -self.recent_budget:] = 1
