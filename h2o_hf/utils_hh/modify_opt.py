@@ -180,13 +180,14 @@ class OPTAttention_Mask(nn.Module):
             else:
                 # activate historical best self.cache_budget - self.recent_budget tokens.
                 # self.previous_scores # (k-Cache - 1)
+                attn_mask[:, :] = 0
                 selected_set = self.previous_scores
 
             if not self.heavy_budget == 0:
                 _, keep_topk = selected_set.topk(k=self.heavy_budget, dim=-1, largest=True)
                 attn_mask = attn_mask.scatter(-1, keep_topk, 1)
 
-        self.attention_masks_next = attn_mask.unsqueeze(1)
+        self.attention_masks_next = attn_mask.clone().unsqueeze(1)
 
         score_mask = attn_mask[:,:-1]
         score_mask[:, -self.recent_budget:] = 1
